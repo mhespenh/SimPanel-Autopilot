@@ -35,7 +35,6 @@ Message message;
 // Don't use D0 or A5 for interrupts!
 Encoder e(D4,D6);
 long oldPos;
-String t;
 
 void setup() {
 // WiFi.off();        //Turn off wifi
