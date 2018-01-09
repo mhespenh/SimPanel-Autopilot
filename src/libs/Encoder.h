@@ -48,6 +48,7 @@ public:
 		pin2_register = PIN_TO_BASEREG(pin2);
 		pin2_bitmask = PIN_TO_BITMASK(pin2);
 		position = 0;
+		oldPosition = 0;
 		// allow time for a passive R-C filter to charge
 		// through the pullup resistors, before reading
 		// the initial state
@@ -71,13 +72,33 @@ public:
 		position = p;
 		interrupts();
 	}
+
+	inline bool hasChanged() {
+		int ret = abs(this->position - this->oldPosition);
+		return ret > 3;
+	}
+
+	inline signed char getUpdatedDirection() {
+		signed char direction = 0;
+		if( this->oldPosition - this->position > 0) {
+			direction = 1;
+		}
+		else if( this->oldPosition - this->position < 0 ) {
+			direction =-1;
+		}
+
+		this-> oldPosition = this->position;
+		return direction;
+	}
 private:
+	volatile int direction;
 	volatile IO_REG_TYPE * pin1_register;
 	volatile IO_REG_TYPE * pin2_register;
 	IO_REG_TYPE            pin1_bitmask;
 	IO_REG_TYPE            pin2_bitmask;
 	uint8_t                state;
 	int32_t                position;
+	int32_t								 oldPosition;
 
 //                           _______         _______
 //               Pin1 ______|       |_______|       |______ Pin1

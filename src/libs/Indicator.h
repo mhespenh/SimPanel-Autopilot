@@ -4,7 +4,7 @@
 class Indicator {
   public:
     Indicator() {};
-    void init(int);
+    Indicator(int);
     void on();
     void off();
     void toggle();

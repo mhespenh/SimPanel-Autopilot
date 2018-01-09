@@ -1,8 +1,9 @@
 #include "Particle.h"
 #include "Indicator.h"
 
-void Indicator::init(int pin) {
+Indicator::Indicator(int pin) {
   pinMode(pin, OUTPUT);
+  digitalWrite(pin, LOW);
   _pin = pin;
 }
 
