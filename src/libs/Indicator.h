@@ -3,7 +3,8 @@
 
 class Indicator {
   public:
-    Indicator(int);
+    Indicator() {};
+    void init(int);
     void on();
     void off();
     void toggle();

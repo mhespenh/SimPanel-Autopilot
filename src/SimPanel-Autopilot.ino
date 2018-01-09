@@ -5,7 +5,8 @@
 * Date: 06 Jan 2018
 */
 #include "pins.h"
-#include <libs/Indicator.h>
+#include <libs/GearIndicator.h>
+#include <libs/Switch.h>
 #include <libs/Button.h>
 #include <libs/Encoder.h>
 
@@ -13,96 +14,96 @@
 //  otherwise setup and loop won't run
 //SYSTEM_MODE(MANUAL);
 
+struct Message {
+  bool isReady;
+  bool isUnread;
+  char cmd;
+  char letter;
+  String data;
+};
+
 // Globals
-volatile bool buttonsChanged;
-Button b(A0);
-Indicator i(D0);
+Switch switch_gear(A0);
+Button button_apHeading(A1);
+GearIndicator gearIndicator_nose(D0, D1);
+GearIndicator gearIndicator_left(D2, D3);
+GearIndicator gearIndicator_right(D4, D5);
+
+String messageBuffer;
+Message message;
 
 // Don't use D0 or A5 for interrupts!
 Encoder e(D4,D6);
 long oldPos;
+String t;
 
 void setup() {
 // WiFi.off();        //Turn off wifi
  Serial.begin(115200);
  pinMode(D5, OUTPUT);
- pinMode(D1, OUTPUT);
- digitalWrite(D1, LOW);
  digitalWrite(D5, LOW);
  Serial.println("Ready");
+ message = { false, false, '-', '-', String("") };
 }
 
 void loop() {
- if( b.wasPressed() ) {
-   Serial.println("Pressed! ");
-   Serial.println(millis());
-   i.toggle();
- }
+  if( button_apHeading.wasPressed() ) {
+     Serial.println("Toggling AP");
+   }
 
- long pos = e.read();
- if( pos != oldPos ) {
-   oldPos = pos;
-   Serial.println(pos);
- }
+   long pos = e.read();
+   if( pos != oldPos ) {
+     oldPos = pos;
+     Serial.println(pos);
+   }
+
+   if( message.isReady ) {
+     message.isUnread = false;
+     message.isReady = false;
+     handleMessage();
+   }
 }
 
-void EQUALS(){      // The first identifier was "="
-  char CodeIn = Serial.read(); // Get the second identifier
-  switch(CodeIn) {// Now lets find what to do with it
-  case 'A'://Found the second identifier
-      //Do something
-   break;
+void handleMessage() {
+  Serial.printlnf("Got message CMD: '%c', Letter: %c, data: %s", message.cmd, message.letter, message.data.c_str());
+  switch( message.cmd ) {
+    case '<':
+      switch( message.letter ) {
+        case 'A':
+          gearIndicator_nose.parseUpdate(message.data.toInt());
+          break;
+        case 'B':
+          gearIndicator_left.parseUpdate(message.data.toInt());
+          break;
+        case 'C':
+          gearIndicator_right.parseUpdate(message.data.toInt());
+          break;
+      }
+      break;
 
-   case 'B':
-      //Do something
-   break;
-
-   case 'C':
-      //Do something
-   break;
-
-        //etc etc etc
+      case '=':
+        //do stuff
+        break;
   }
-}
-
-void LESSTHAN(){    // The first identifier was "<"
-  char CodeIn = Serial.read(); // Get the second identifier
-  switch(CodeIn) {// Now lets find what to do with it
-   case 'A'://Found the second identifier "GearN"
-   break;
-
-   case 'B':
-   break;
-
-   case 'C':
-   break;
-
-      //etc etc etc
-  }
-}
-
-void QUESTION(){    // The first identifier was "?"
-  char CodeIn = Serial.read(); // Get the second identifier
-  switch(CodeIn) {// Now lets find what to do with it
-    case 'A'://Found the second identifier
-      //Do something
-      break;
-
-    case 'B':
-      //Do something
-      break;
-
-    case 'C':
-      //Do something
-      break;
-    }
 }
 
 // Called automagically when serial data is ready
 void serialEvent() {
-  char code = Serial.read();
-  if (code == '=') { EQUALS(); } // The first identifier is "="
-  if (code == '<') { LESSTHAN(); }// The first identifier is "<"
-  if (code == '?') { QUESTION(); }// The first identifier is "?"
-//  if (code == '/') { SLASH(); }// The first identifier is "/" (Annunciators)
+  char inChar;
+  while( Serial.available() ) {
+    inChar = (char)Serial.read();
+    if( !message.isUnread ) {
+      message.isUnread = true;
+      messageBuffer.remove(0);
+    }
+    if( inChar == '\r'  ) {
+      message.cmd = messageBuffer.charAt(0);
+      message.letter = messageBuffer.charAt(1);
+      message.data = messageBuffer.substring(2);
+      message.isReady = true;
+    }
+    else {
+      messageBuffer += inChar;
+    }
+  }
 }

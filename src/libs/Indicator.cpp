@@ -1,7 +1,7 @@
 #include "Particle.h"
 #include "Indicator.h"
 
-Indicator::Indicator(int pin) {
+void Indicator::init(int pin) {
   pinMode(pin, OUTPUT);
   _pin = pin;
 }
