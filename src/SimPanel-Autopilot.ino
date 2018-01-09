@@ -46,6 +46,10 @@ void setup() {
 }
 
 void loop() {
+  if( button_apHeading.wasPressed() ) {
+     Serial.println("Toggling AP");
+   }
+
    long pos = e.read();
    if( pos != oldPos ) {
      oldPos = pos;
